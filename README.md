@@ -1,12 +1,27 @@
 # Behavioral Cloning of a Car using Simulation 
 
 The goals / steps of this project are the following:
+* Use the simulator to collect data of good driving behavior
+* Build, a convolution neural network in Keras that predicts steering angles from images
+* Train and validate the model with a training and validation set
+* Test that the model successfully drives around track one without leaving the road
+* Summarize the results with a written report
 
-* Gather data from the simulation for training
-* Create a Neural Networks architecture and model using Keras
-* Augmented the data by flipping the images and steering direction to provide more training data
-* Train the model 
-* Fine tune the model by gathering more appropriate data or adjusting the model
+[//]: # (Image References)
+
+[NN]: ./images/nn.png "Architecture"
+[loss1]: ./images/loss9.png "Model Visualization"
+[loss2]: ./images/loss10.png "Model Visualization"
+[loss3]: ./images/loss11.png "Model Visualization"
+[Relu]: ./images/relu.png "Relu"
+[Elu]: ./images/elu.png "Elu"
+
+
+## Scripts and models
+* model.py : script for creating and training model
+* drive.py : script for driving the car and saving video
+* model10.h5 : the convolution neural network model
+* video.py : convert images to mp4 video 
 
 ## Setup and Running Instruction
 
@@ -16,7 +31,10 @@ The goals / steps of this project are the following:
 
 ### Running the Model
 1. Open the simulation in Autonomous mode
-2. Run `python drive.py model.h5`
+2. Run the following line to run the model in simulation
+```sh
+python drive.py model.h5
+```
 
 ### Gathering Data
 1. Run the simulation in training mode
@@ -25,12 +43,13 @@ The goals / steps of this project are the following:
 
 ### Training Data
 1. Specify the data folder in `model.py` that you want to train the network on
-2. Run `python model.py`
+2. Run the following code in terminal to build model. Modify the `input_model`, `output_model`, `data_folder`, and `output_image` variable to specify which model to train, the output model name, the data folder that will be used for training, and the name of output loss graph, respectively. 
+```sh
+python model.py
+```
 
-
-
-## Model Architecture
-![NN Image](nn.png)
+## Model Architecture and Training Strategy
+![NN Image][NN]
 
 The architecture is similar to Nvidia deep learning network, but I experiment with the number of filter and layer.
 
@@ -70,29 +89,42 @@ The cropping layer remove the sky region and the region that the car hood which 
 
 #### Convolution Neural Network
 
-Multiple layers of Convolution Neural Network are used to detect different feature of the scenary to determine the driving direction. Each layer have different number of filter for detecting different feauture.
+Multiple layers of Convolution Neural Network are used to detect different feature of the scenary to determine the driving direction. Each layer have different number of filter for detecting different feauture. The CNN have a combination of ReLu and ELU activation as well as dropout.
 
 #### Flatten
 
-Flatten layer convert the input into a single row
+Flatten layer convert the 2D input into 1D
 
 #### Dense
 
-Dense Layer find the 
+Dense Layer slowly find the important feature from 1D data and convert it into the steering angle that is required
 
-### Training Process
+### Solution Design Approach
 
-The model is train using Mean Square Error (MSE) loss and Adam optimizer. The number of epoch for each training is 2 and the validation data is 20% of the entire data. However, the model is retrain multiple time with different dataset to tune it.
+#### Creation of Training Set & Training Process
 
-The model is train on the `normal_drive` dataset initially which is just the car driving along the center of the road. After looking at the result, it still need improvement when learning to avoid the curve. Afterwards, the data is train with `gap_and_curve` data so it knows how to deal with curvature and also gap on the road. The training is done a few more time that the first dataset to priority this motion. Finally, the data is train with `avoid_edge` dataset so it knows to go back to center if the car is near the edges.
+There are 3 mains dataset in which I train the model on. The first dataset is just the car driving normally along the center. The second dataset focus more on the curve portion, especially the area where there is the gap. Lastly, the final dataset contain images of the car going to the center from the edge. This will teach the model to go back to the center everytimes it stay to close to the edge. The model were trained using generator so it doesn't have to compute all the images before running. Moreover, I augmented the dataset by flipping the images and reverse the steering direction by multiplying by -1.
 
-Originally, the model include dropout layer to prevent overfitting. However, after testing with simulation, the dropout layer cause the car to always go beyond the road edge, even after lowering the dropout rate. Therefore, I decided to remove it. This could cause overfitting in the long run, but from the training and validation loss, they are relatively equal with higher loss in the training.
+Originally, the first model is similar to the NVIDIA model, which use only ReLu activation. The model is train using Mean Square Error (MSE) loss and Adam optimizer. The number of epoch for each training is 2 and the validation data is 20% of the entire data. However, the model still cause the car to goes outside of the road. Therefore, it is better if the model punish the negativeafter changing to ELu, the performance increase. The model should punish the steering when it is going toward the edges. Therefore, the Elu is a more appropriate choice.
+
+Comaparison between ReLu and Elu is shown below:
+
+![Relu][Relu]
+![Elu][Elu]
+
+Dropouts are used to prevent the model from overfitting. The validation should still be higher than the training model. As I train the model with multiple dataset, the validation loss finally goes beyond the training loss.
+
+Here are the loss graph from the training:
+
+![loss1][loss1]
+![loss2][loss2]
+![loss3][loss3]
 
 ## Discussion
 
 ### Problem
 
-Gathering data took a lot of time, as expected for machine learning problem. Also, the type of data gather also effect the model. Therefore, I gather different type of dataset and then tune the model by training it different time.
+Gathering data took a lot of time, as expected for machine learning problem. Also, the type of data gather also effect the model. Therefore, I gather different type of dataset and then tune the model by training it different time. At first when I was using ReLu activation, the model did not perform well. However, after using ELu, it improved much more significantly. The activation function for different model have hugh impact on the performance.
 
 ### Further Improvement
 
